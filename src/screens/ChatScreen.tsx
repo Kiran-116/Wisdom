@@ -13,6 +13,9 @@ import CrisisAlert from '../components/CrisisAlert';
 import LoadingReflection from '../components/LoadingReflection';
 import { gitaVerses } from '../data/gitaVerses';
 import type { EmotionType, RiskLevel } from '../services/safetyService';
+import { detectEmotion, detectRiskLevel, isCrisisMessage, getCrisisResponse } from '../services/safetyService';
+import { retrieveRelevantVerses } from '../services/ragService';
+import { generateReflectiveResponse } from '../services/aiService';
 
 type Props = StackScreenProps<RootStackParamList, 'Chat'>;
 
@@ -51,38 +54,71 @@ export default function ChatScreen({ route }: Props) {
     setMessages((m) => [userMsg, ...m]);
     setText('');
 
-    // Placeholder UX: render full Phase-2 cards; logic will be wired in later phases.
-    const isCrisis = userText.toLowerCase().includes('suicide') || userText.toLowerCase().includes('end my life');
+    // Detect emotion and risk
+    const emotion = detectEmotion(userText);
+    const risk = detectRiskLevel(userText);
 
-    if (isCrisis) {
+    // Crisis handling
+    if (isCrisisMessage(userText) || risk === 'CRISIS') {
+      const crisis = getCrisisResponse();
       const assistant: ChatMessage = {
         id: String(Date.now() + 1),
         role: 'assistant',
-        text: 'Crisis response',
+        text: crisis.message,
         isCrisis: true,
       };
       setMessages((m) => [assistant, ...m]);
+      // decrement query if available in store
+      try {
+        const dec = useAppStore.getState().decrementQuery;
+        dec?.();
+      } catch (e) {}
       return;
     }
 
-    const assistant: ChatMessage = {
-      id: String(Date.now() + 1),
-      role: 'assistant',
-      text: 'Reflective guidance',
-      payload: {
-        emotion: 'stress',
-        riskLevel: 'LOW',
-        pausePrompt,
-        answer: 'Breathe first. Write what you feel, then choose a response you can stand by later.',
-        versesUsed: topVerses,
-        forwardMirror: {
-          impulsivePath: 'Reacting in panic may increase conflict and regret.',
-          reflectivePath: 'Pausing helps you choose words that protect your relationships.',
-          suggestedAction: 'Write your feelings in a note. Wait 10 minutes before sending any message.',
-        },
-      },
-    };
-    setMessages((m) => [assistant, ...m]);
+    // Retrieve relevant verses
+    const verses = retrieveRelevantVerses({ message: userText, category, emotion });
+
+    // Show a loading assistant message (will render LoadingReflection)
+    const loadingMsg: ChatMessage = { id: String(Date.now() + 1), role: 'assistant', text: '' };
+    setMessages((m) => [loadingMsg, ...m]);
+
+    // Generate final reflective response (falls back to template if no API key)
+    (async () => {
+      try {
+        const resp = await generateReflectiveResponse({ message: userText, category, emotion, riskLevel: risk, verses });
+
+        const assistant: ChatMessage = {
+          id: String(Date.now() + 2),
+          role: 'assistant',
+          text: 'Reflective guidance',
+          payload: {
+            emotion: resp.emotion as EmotionType,
+            riskLevel: resp.riskLevel,
+            pausePrompt: resp.pausePrompt,
+            answer: resp.answer,
+            versesUsed: resp.verses,
+            forwardMirror: resp.forwardMirror,
+          },
+        };
+
+        // replace loading message with assistant payload
+        setMessages((m) => m.map((it) => (it.id === loadingMsg.id ? assistant : it)));
+      } catch (err) {
+        // fallback: replace with simple text
+        const assistant: ChatMessage = {
+          id: String(Date.now() + 2),
+          role: 'assistant',
+          text: 'Sorry, something went wrong while generating a response.',
+        };
+        setMessages((m) => m.map((it) => (it.id === loadingMsg.id ? assistant : it)));
+      } finally {
+        try {
+          const dec = useAppStore.getState().decrementQuery;
+          dec?.();
+        } catch (e) {}
+      }
+    })();
   }
 
   return (
