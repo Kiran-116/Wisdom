@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const CATEGORIES = [
   'Exam Stress',
@@ -13,7 +13,7 @@ const CATEGORIES = [
   'Fear of Failure',
 ];
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Category'>;
+type Props = StackScreenProps<RootStackParamList, 'Category'>;
 
 export default function CategoryScreen({ navigation }: Props) {
   return (

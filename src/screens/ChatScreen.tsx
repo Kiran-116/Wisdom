@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Button, FlatList } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 import useAppStore from '../store/useAppStore';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+type Props = StackScreenProps<RootStackParamList, 'Chat'>;
 
 export default function ChatScreen({ route }: Props) {
   const category = route.params?.category ?? 'General';

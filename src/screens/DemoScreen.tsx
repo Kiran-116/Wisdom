@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import type { StackScreenProps } from '@react-navigation/stack';
+import type { RootStackParamList } from '../navigation/AppNavigator';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Demo'>;
+type Props = StackScreenProps<RootStackParamList, 'Demo'>;
 
 export default function DemoScreen({ navigation }: Props) {
   return (

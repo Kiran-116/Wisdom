@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, Picker } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
 
 export default function AdminScreen() {
   const [topic, setTopic] = useState('');
